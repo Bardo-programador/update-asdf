@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Verifica se o número de versão foi passado
+if [ -z "$1" ]; then
+  echo "Uso: $0 <versão do asdf> (ex: 0.13.1)"
+  exit 1
+fi
+
+VERSAO="v$1"
+BASE_URL="https://github.com/asdf-vm/asdf/releases/download/$VERSAO"
+DOWNLOAD_DIR="$HOME/Downloads"
+ARQUIVO="asdf-$VERSAO-linux-amd64.tar.gz"
+ARQUIVO_MD5="$ARQUIVO.md5"
+
+# Cria a pasta de downloads se não existir
+mkdir -p "$DOWNLOAD_DIR"
+
+# Baixar os arquivos
+echo "Baixando arquivos..."
+curl -L "$BASE_URL/$ARQUIVO" -o "$DOWNLOAD_DIR/$ARQUIVO" # baixa arquivos e manda para ~/Downloads
+curl -L "$BASE_URL/$ARQUIVO_MD5" -o "$DOWNLOAD_DIR/$ARQUIVO_MD5"
+
+# Verificação de MD5
+echo "Verificando integridade dos arquivos..."
+
+cd "$DOWNLOAD_DIR" || exit 1 # Tenta mudar para ~/Downloads/ e falha se não conseguir
+
+# Corrige o arquivo .md5 se necessário (alguns vem só com o hash, sem o nome do arquivo)
+if ! grep -q "$ARQUIVO" "$ARQUIVO_MD5"; then # Se o nome do arquivo não está no arquivo de md5:
+  # Reescreve adicionando o nome do arquivo esperado
+  HASH=$(cat "$ARQUIVO_MD5" | tr -d '[:space:]') # Coleta o hash do arquivo e tira espaços e quebras de linha
+  echo "$HASH  $ARQUIVO" >"$ARQUIVO_MD5"         # Salva a string "HASH ARQUIVO" e sobrescreve no arquivo md5
+fi
+
+md5sum -c "$ARQUIVO_MD5" # Faz o checkagem md5 do arquivo do diretório com o que está salvo no arquivo md5
+
+if [ $? -ne 0 ]; then # Se falhar a verificação parar
+  echo "Falha na verificação de integridade! Abortando."
+  exit 2
+fi
+
+# Extração do arquivo (não é um .tar.gz comum, é o binário compactado — só extrair)
+echo "Extraindo o binário..."
+tar -xzf "$ARQUIVO"
+
+# Mover o executável para o local do sistema ou onde o usuário quiser
+echo "Movendo o binário para a pasta correta..."
+
+# Exemplo usando seu comando anterior, para sobrescrever o existente:
+mv asdf $(which asdf)
+
+echo "Atualização do asdf concluída com sucesso!"
