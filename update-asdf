@@ -43,6 +43,11 @@ fi
 echo "Extraindo o binário..."
 tar -xzf "$ARQUIVO"
 
+# Apagando arquivos baixados
+echo "Apagando arquivos baixandos"
+rm $DOWNLOAD_DIR/$ARQUIVO
+rm $DOWNLOAD_DIR/ARQUIVO_MD5
+
 # Mover o executável para o local do sistema ou onde o usuário quiser
 echo "Movendo o binário para a pasta correta..."
 
